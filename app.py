@@ -13,7 +13,7 @@ import os
 def load_data(file_path):
     return pd.read_csv(file_path)
 
-data = pd.read_csv(r"C:\Users\ACER\Downloads\UniversalBank.csv")
+data = pd.read_csv(r"UniversalBank.csv")
 
 # Preprocess data
 def preprocess_data(data):
