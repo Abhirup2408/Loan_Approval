@@ -3,16 +3,17 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.utils import to_categorical
+import os
 
 # Load dataset
 @st.cache_data
 def load_data(file_path):
     return pd.read_csv(file_path)
 
-data = pd.read_csv(r"UniversalBank.csv")
+data = pd.read_csv(r"C:\Users\ACER\Downloads\UniversalBank.csv")
 
 # Preprocess data
 def preprocess_data(data):
@@ -28,31 +29,37 @@ X, y, scaler = preprocess_data(data)
 # Split data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Build the model
+# Build and save the model if not already saved
+MODEL_PATH = "loan_model.h5"
+
 @st.cache_resource
-def build_model():
-    model = Sequential()
-    model.add(Dense(250, input_dim=X_train.shape[1], activation='relu', kernel_initializer='normal'))
-    model.add(Dropout(0.3))
-    model.add(Dense(500, activation='relu', kernel_initializer='normal'))
-    model.add(Dropout(0.3))
-    model.add(Dense(500, activation='relu', kernel_initializer='normal'))
-    model.add(Dropout(0.3))
-    model.add(Dense(250, activation='relu', kernel_initializer='normal'))
-    model.add(Dropout(0.3))
-    model.add(Dense(2, activation='softmax'))
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+def build_and_train_model():
+    if not os.path.exists(MODEL_PATH):
+        model = Sequential()
+        model.add(Dense(250, input_dim=X_train.shape[1], activation='relu', kernel_initializer='normal'))
+        model.add(Dropout(0.3))
+        model.add(Dense(500, activation='relu', kernel_initializer='normal'))
+        model.add(Dropout(0.3))
+        model.add(Dense(500, activation='relu', kernel_initializer='normal'))
+        model.add(Dropout(0.3))
+        model.add(Dense(250, activation='relu', kernel_initializer='normal'))
+        model.add(Dropout(0.3))
+        model.add(Dense(2, activation='softmax'))
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        # Train the model
+        model.fit(X_train, y_train, validation_split=0.2, epochs=20, batch_size=32, verbose=0)
+
+        # Save the model
+        model.save(MODEL_PATH)
+    else:
+        model = load_model(MODEL_PATH)
     return model
 
-model = build_model()
-
-# Train the model if not already trained
-if 'model_trained' not in st.session_state:
-    history = model.fit(X_train, y_train, validation_split=0.2, epochs=20, batch_size=32, verbose=0)
-    st.session_state['model_trained'] = True
+model = build_and_train_model()
 
 # Streamlit interface
-st.title("Loan Recommendation system")
+st.title("Predict Personal Loan Acceptance")
 
 st.sidebar.header("Input Parameters")
 def user_input_features():
